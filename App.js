@@ -6,6 +6,7 @@ import LoginScreen from './screens/LoginScreen';
 import HomeScreen from './screens/HomeScreen';
 import RegisterScreen from './screens/RegisterScreen';
 import LoginWithPhoneScreen from './screens/LoginWithPhoneScreen';
+import OTPScreen from './screens/OTPScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -17,6 +18,7 @@ function App() {
         <Stack.Screen options={{headerShown:false}} name="Home" component={HomeScreen} />
         <Stack.Screen options={{headerShown:false}} name="Register" component={RegisterScreen} />
         <Stack.Screen options={{headerShown:false}} name="LoginWithPhone" component={LoginWithPhoneScreen} />
+        <Stack.Screen options={{headerShown:false}} name="OTPScreen" component={OTPScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

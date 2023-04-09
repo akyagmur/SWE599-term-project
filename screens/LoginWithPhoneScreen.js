@@ -6,34 +6,47 @@ import { FirebaseRecaptchaVerifierModal, FirebaseRecaptchaBanner } from 'expo-fi
 import { firebaseConfig } from '../firebaseConfig'
 
 const LoginWithPhoneScreen = ({ navigation }) => {
-    const [phone, setPhone] = useState('')
+    const [phone, setPhone] = useState('+90 553 524 45 94')
     const [code, setCode] = useState('')
     const [verificationId, setVerificationId] = useState('')
     const recaptchaVerifier = useRef(null)
+    
 
     const sendVerification = () => {
-        alert(phone)
+        console.log('phone', phone)
+
         const phoneProvider = new firebaseAuth.PhoneAuthProvider(FIREBASE_AUTH);
-        phoneProvider.verifyPhoneNumber(phone, recaptchaVerifier.current)
-            .then(setVerificationId)
-
-        setPhone('')
-    }
-
-    const confirmCode = () => {
-        const credential = firebaseAuth.PhoneAuthProvider.credential(verificationId, code)
-        firebaseAuth.signInWithCredential(FIREBASE_AUTH, credential)
-            .then((result) => {
-                setCode('')
-            })
+        phoneProvider
+            .verifyPhoneNumber(phone, recaptchaVerifier.current)
+            .then(
+                (verificationId) => {
+                    setVerificationId(verificationId)
+                    // navigate to OTP screen with verificationId as prop
+                    navigation.navigate('OTPScreen', { verificationId })
+                    console.log('verificationId', verificationId)
+                }
+            )
             .catch((error) => {
                 console.log(error)
             });
+
+        //setPhone('')
     }
 
-    const handleLogin = () => {
+    /* const validatePhone = (text) => {
+        // validate if phone number is valid or not
+        var phoneRegex = /^\+[1-9]\d{1,14}$/;
 
-    }
+        // Remove any whitespace or dashes from the phone number
+        var phoneNumber = text.replace(/\s+/g, '').replace(/-/g, '');
+
+        // Check if the phone number matches the regular expression
+        if (phoneRegex.test(phoneNumber)) {
+            return true;
+        } else {
+            return false;
+        }
+    } */
 
     return (
         <KeyboardAvoidingView
@@ -52,6 +65,7 @@ const LoginWithPhoneScreen = ({ navigation }) => {
                         onChangeText={text => setPhone(text)}
                         style={styles.input}
                         autoCapitalize='none'
+                        keyboardType='phone-pad'
                     />
                 </View>
                 <View style={styles.buttonContainer}>
@@ -59,14 +73,14 @@ const LoginWithPhoneScreen = ({ navigation }) => {
                         onPress={() => sendVerification()}
                         style={[styles.button]}
                     >
-                        <Text style={styles.buttonText}>Login</Text>
+                        <Text style={styles.buttonText}>Send Verification Code</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                         /* onPress navigate to register page */
                         onPress={() => navigation.navigate('Register')}
                         style={[styles.button, styles.buttonOutline]}
                     >
-                        <Text style={styles.buttonOutlineText}>Register</Text>
+                        <Text style={styles.buttonOutlineText}>Register via E-mail</Text>
                     </TouchableOpacity>
                 </View>
             </SafeAreaView>

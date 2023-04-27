@@ -2,9 +2,7 @@ import React from 'react';
 import {
     View,
     Text,
-    Button,
     TouchableOpacity,
-    Dimensions,
     TextInput,
     Platform,
     StyleSheet,
@@ -15,9 +13,11 @@ import * as Animatable from 'react-native-animatable';
 import { LinearGradient } from 'expo-linear-gradient';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import Feather from 'react-native-vector-icons/Feather';
+import { FIREBASE_AUTH, firebaseAuth } from '../firebaseConfig'
+import { AuthContext } from '../components/context';
 
 const RegisterScreen = ({ navigation }) => {
-
+    const { login } = React.useContext(AuthContext);
     const [data, setData] = React.useState({
         email: '',
         password: '',
@@ -69,6 +69,34 @@ const RegisterScreen = ({ navigation }) => {
             ...data,
             confirm_secureTextEntry: !data.confirm_secureTextEntry
         });
+    }
+
+    const handleLogin = (email, password) => {
+        firebaseAuth.signInWithEmailAndPassword(FIREBASE_AUTH, email, password)
+            .then((userCredential) => {
+                console.log('userCredential', userCredential['_tokenResponse'])
+                login(userCredential)
+            })
+            .catch((error) => {
+                console.log('error', error)
+            })
+            .finally(() => {
+            })
+    }
+
+    const handleSignUp = () => {
+        let { email, password } = data
+        firebaseAuth
+            .createUserWithEmailAndPassword(FIREBASE_AUTH, email, password)
+            .then((userCredential) => {
+                // Signed in
+                console.log('userCredential', userCredential)
+                handleLogin(email, password)
+            })
+            .catch((error) => {
+                console.log('error', error)
+                // ..
+            });
     }
 
     return (
@@ -188,7 +216,7 @@ const RegisterScreen = ({ navigation }) => {
                     <View style={styles.button}>
                         <TouchableOpacity
                             style={styles.signIn}
-                            onPress={() => { }}
+                            onPress={() => { handleSignUp() }}
                         >
                             <LinearGradient
                                 colors={['#0782F9', '#0782F9']}

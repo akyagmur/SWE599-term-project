@@ -1,31 +1,35 @@
 import { KeyboardAvoidingView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import React, { useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { FIREBASE_AUTH, FIREBASE_APP, FIRESTORE_DB, firebaseAuth } from '../firebaseConfig'
+import { FIREBASE_AUTH, firebaseAuth } from '../firebaseConfig'
 import {
     CodeField,
     Cursor,
     useBlurOnFulfill,
     useClearByFocusCell,
 } from 'react-native-confirmation-code-field';
+import { AuthContext } from '../components/context';
 
 const OTPScreen = ({ route }) => {
     // prop verificationId is passed from LoginWithPhoneScreen
     const verificationId = route.params.verificationId
-    const [otp, setOtp] = useState('');
-    const [code, setCode] = useState('')
     const [value, setValue] = useState('');
     const ref = useBlurOnFulfill({ value, cellCount: 6 });
     const [props, getCellOnLayoutHandler] = useClearByFocusCell({
         value,
         setValue,
     });
-
+    const { loginWithPhone } = React.useContext(AuthContext);
     const confirmCode = () => {
+        if (value.length < 6) {
+            alert('Please enter a valid code')
+            return
+        }
+        /* console.log(value.length) */
         const credential = firebaseAuth.PhoneAuthProvider.credential(verificationId, value)
         firebaseAuth.signInWithCredential(FIREBASE_AUTH, credential)
             .then((result) => {
-                console.log(result)
+                loginWithPhone(result);
                 setCode('')
             })
             .catch((error) => {
@@ -50,12 +54,17 @@ const OTPScreen = ({ route }) => {
                     keyboardType="number-pad"
                     textContentType="oneTimeCode"
                     renderCell={({ index, symbol, isFocused }) => (
-                        <Text
+                        <View
                             key={index}
-                            style={[styles.cell, isFocused && styles.focusCell]}
-                            onLayout={getCellOnLayoutHandler(index)}>
-                            {symbol || (isFocused ? <Cursor /> : null)}
-                        </Text>
+                            onLayout={getCellOnLayoutHandler(index)}
+                            style={[styles.cellWrapper, isFocused && styles.focusCell]}
+                        >
+                            <Text
+                                style={styles.cell}
+                            >
+                                {symbol || (isFocused ? <Cursor /> : null)}
+                            </Text>
+                        </View>
                     )}
                 />
                 <View style={styles.buttonContainer}>
@@ -123,16 +132,18 @@ const styles = StyleSheet.create({
     root: { flex: 1, padding: 20 },
     title: { textAlign: 'center', fontSize: 30 },
     codeFieldRoot: { marginTop: 20 },
+    cellWrapper: {
+        borderBottomWidth: 4,
+        borderBottomColor: '#00000030',
+        marginHorizontal: 5,
+    },
     cell: {
         width: 50,
         height: 50,
-        marginHorizontal: 5,
         lineHeight: 38,
         fontSize: 24,
-        borderWidth: 2,
-        borderColor: '#00000030',
         textAlign: 'center',
-        borderRadius: 10,
+        color: '#00000030',
     },
     focusCell: {
         borderColor: '#000',

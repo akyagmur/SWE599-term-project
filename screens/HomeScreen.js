@@ -1,0 +1,23 @@
+import { StyleSheet, Text, View } from 'react-native'
+import React, { useContext, useState } from 'react'
+import { AuthContext } from '../components/context'
+import * as Animatable from 'react-native-animatable';
+
+const HomeScreen = () => {
+
+  const { loginState } = useContext(AuthContext);
+  console.log('loginState', loginState);
+  return (
+    <Animatable.View
+      animation="fadeInUpBig"
+    >
+      <Text>
+        Test
+      </Text>
+    </Animatable.View>
+  )
+}
+
+export default HomeScreen
+
+const styles = StyleSheet.create({})

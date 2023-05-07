@@ -4,6 +4,10 @@ import HomeScreen from "./HomeScreen";
 import Icon from 'react-native-vector-icons/Ionicons';
 import { createMaterialBottomTabNavigator } from '@react-navigation/material-bottom-tabs';
 import ContactsScreen from './ContactsScreen';
+import SettingsScreen from './SettingsScreen';
+import ProfileSettingsScreen from './ProfileSettingsScreen';
+import AddressScreen from './AddressScreen';
+import CreateAddressScreen from './CreateAddressScreen';
 
 const HomeStack = createStackNavigator();
 const ContactsStack = createStackNavigator();
@@ -113,8 +117,26 @@ const SettingsStackScreen = ({ navigation }) => {
                 },
             }}
         >
-            <SettingsStack.Screen name="Settings" component={HomeScreen} options={{
+            <SettingsStack.Screen name="Settings" component={SettingsScreen} options={{
                 title: 'Settings',
+                headerLeft: () => (
+                    <Icon.Button name="ios-menu" size={25} backgroundColor="#3f51b5" onPress={() => navigation.openDrawer()}></Icon.Button>
+                )
+            }} />
+            <SettingsStack.Screen name="ProfileSettings" component={ProfileSettingsScreen} options={{
+                title: 'Profile Settings',
+                headerLeft: () => (
+                    <Icon.Button name="ios-menu" size={25} backgroundColor="#3f51b5" onPress={() => navigation.openDrawer()}></Icon.Button>
+                )
+            }} />
+            <SettingsStack.Screen name="Address" component={AddressScreen} options={{
+                title: 'Address Settings',
+                headerLeft: () => (
+                    <Icon.Button name="ios-menu" size={25} backgroundColor="#3f51b5" onPress={() => navigation.openDrawer()}></Icon.Button>
+                )
+            }} />
+            <SettingsStack.Screen name="CreateAddress" component={CreateAddressScreen} options={{
+                title: 'Address Settings',
                 headerLeft: () => (
                     <Icon.Button name="ios-menu" size={25} backgroundColor="#3f51b5" onPress={() => navigation.openDrawer()}></Icon.Button>
                 )

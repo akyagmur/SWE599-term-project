@@ -9,17 +9,28 @@ import { Avatar, Title, Caption, Paragraph, Drawer, TouchableRipple, Switch } fr
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { AuthContext } from "../components/context";
 import md5 from 'md5';
+import { getAuth } from "firebase/auth";
 
 export function DrawerContent(props) {
 
     const [isDarkTheme, setIsDarkTheme] = React.useState(false);
+    const [user, setUser] = React.useState({});
+
+    React.useEffect(() => {
+        const auth = getAuth();
+        const user = auth.currentUser;
+        
+        console.log('user',user)
+
+        setUser(user);
+    }, []);
 
     const toggleTheme = () => {
         setIsDarkTheme(!isDarkTheme);
     }
 
-    const { logout, loginState } = React.useContext(AuthContext);
-    const image = loginState.email ? "https://www.gravatar.com/avatar/" + md5(loginState.email) + "?s=128" : "https://www.gravatar.com/avatar/00000000000000000000000000000000?s=128";
+    const { logout } = React.useContext(AuthContext);
+    const image = user.email ? "https://www.gravatar.com/avatar/" + md5(user.email) + "?s=128" : "https://www.gravatar.com/avatar/00000000000000000000000000000000?s=128";
     return (
         <View style={{ flex: 1 }}>
             <DrawerContentScrollView {...props}>
@@ -35,13 +46,13 @@ export function DrawerContent(props) {
                             />
                             <View style={{ marginLeft: 15, flexDirection: "column" }}>
                                 <Title style={styles.title}>
-                                    {loginState.name || "User"}
+                                    {user.displayName}
                                 </Title>
                                 <Caption style={styles.caption}>
-                                    {loginState.email || "email"}
+                                    {user.email}
                                 </Caption>
                                 <Caption style={styles.caption}>
-                                    {loginState.phone || ""}
+                                    {user.phoneNumber}
                                 </Caption>
                             </View>
                         </View>

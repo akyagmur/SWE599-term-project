@@ -13,12 +13,16 @@ import * as Animatable from 'react-native-animatable';
 import { LinearGradient } from 'expo-linear-gradient';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import Feather from 'react-native-vector-icons/Feather';
-import { FIREBASE_AUTH, firebaseAuth } from '../firebaseConfig'
+import { FIREBASE_AUTH, FIRESTORE_DB, firebaseAuth } from '../firebaseConfig'
 import { AuthContext } from '../components/context';
+import { addDoc, collection } from 'firebase/firestore';
+import authErrors from '../components/firebase_auth_messages';
+import { updateProfile } from 'firebase/auth';
 
 const RegisterScreen = ({ navigation }) => {
     const { login } = React.useContext(AuthContext);
     const [data, setData] = React.useState({
+        name: '',
         email: '',
         password: '',
         confirm_password: '',
@@ -28,7 +32,9 @@ const RegisterScreen = ({ navigation }) => {
     });
 
     const textInputChange = (val) => {
-        if (val.length !== 0) {
+        const emailRegex = /\S+@\S+\.\S+/;
+
+        if (val.length !== 0 && emailRegex.test(val)) {
             setData({
                 ...data,
                 email: val,
@@ -75,7 +81,14 @@ const RegisterScreen = ({ navigation }) => {
         firebaseAuth.signInWithEmailAndPassword(FIREBASE_AUTH, email, password)
             .then((userCredential) => {
                 console.log('userCredential', userCredential['_tokenResponse'])
-                login(userCredential)
+
+                updateProfile(userCredential.user, {
+                    displayName: data.name,
+                })
+                    .then(() => {
+                        console.log('updateProfile success')
+                        login(userCredential)
+                    });
             })
             .catch((error) => {
                 console.log('error', error)
@@ -84,20 +97,57 @@ const RegisterScreen = ({ navigation }) => {
             })
     }
 
+    const handleSaveUserInfo = (userCredential) => {
+        const usersRef = collection(FIRESTORE_DB, 'users')
+        addDoc(usersRef, {
+            name: userCredential.user.displayName || 'null',
+            email: userCredential.user.email || 'null',
+            displayName: userCredential.user.displayName || 'null',
+            photoURL: userCredential.user.photoURL || 'null',
+            uid: userCredential.user.uid || 'null',
+            createdAt: new Date(),
+        })
+    }
+
     const handleSignUp = () => {
-        let { email, password } = data
+        let { email, password, confirm_password, name, check_textInputChange } = data
+
+        if (name.length < 2) {
+            alert('Please enter a valid name')
+            return
+        }
+
+        if (password !== confirm_password) {
+            alert('Password and confirm password are not matched')
+            return
+        }
+
+        /* if (check_textInputChange) {
+            alert('Please enter a valid email')
+            return
+        } */
+
         firebaseAuth
             .createUserWithEmailAndPassword(FIREBASE_AUTH, email, password)
             .then((userCredential) => {
                 // Signed in
                 console.log('userCredential', userCredential)
                 handleLogin(email, password)
+                handleSaveUserInfo(userCredential)
             })
             .catch((error) => {
-                console.log('error', error)
-                // ..
+                console.log('handleSignUp error', error)
+                // get error message
+                let errorMessage = '';
+                var errorCode = error.code;
+                errorCode = errorCode.replace('auth/', '');
+                authErrors[errorCode] ? errorMessage = authErrors[errorCode] : errorMessage = error.message
+                alert(errorMessage)
             });
     }
+
+    // in this method, save user info to firestore
+
 
     return (
         <View style={styles.container}>
@@ -110,7 +160,25 @@ const RegisterScreen = ({ navigation }) => {
                 style={styles.footer}
             >
                 <ScrollView>
-                    <Text style={styles.text_footer}>E-mail</Text>
+                    {/* Display Name */}
+                    <Text style={styles.text_footer}>Full name</Text>
+                    <View style={styles.action}>
+
+                        <TextInput
+                            placeholder="Your full name"
+                            style={styles.textInput}
+                            autoCapitalize="none"
+                            onChangeText={(val) => setData({
+                                ...data,
+                                name: val
+                            })
+                            }
+                        />
+                    </View>
+
+                    <Text style={[styles.text_footer, {
+                        marginTop: 25
+                    }]}>E-mail</Text>
                     <View style={styles.action}>
                         <FontAwesome
                             name="user-o"
@@ -137,7 +205,7 @@ const RegisterScreen = ({ navigation }) => {
                     </View>
 
                     <Text style={[styles.text_footer, {
-                        marginTop: 35
+                        marginTop: 25
                     }]}>Password</Text>
                     <View style={styles.action}>
                         <Feather
@@ -172,7 +240,7 @@ const RegisterScreen = ({ navigation }) => {
                     </View>
 
                     <Text style={[styles.text_footer, {
-                        marginTop: 35
+                        marginTop: 25
                     }]}>Confirm Password</Text>
                     <View style={styles.action}>
                         <Feather

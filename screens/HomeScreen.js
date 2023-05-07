@@ -12,7 +12,10 @@ const HomeScreen = () => {
       animation="fadeInUpBig"
     >
       <Text>
-        Test
+        {loginState.email}
+      </Text>
+      <Text>
+        {loginState.name}
       </Text>
     </Animatable.View>
   )

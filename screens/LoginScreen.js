@@ -16,6 +16,7 @@ import Feather from 'react-native-vector-icons/Feather';
 import { ActivityIndicator, useTheme } from 'react-native-paper';
 import { AuthContext } from '../components/context';
 import { FIREBASE_AUTH, firebaseAuth } from '../firebaseConfig';
+import { ScrollView } from 'react-native-gesture-handler';
 
 const SignInScreen = ({ navigation }) => {
 
@@ -59,7 +60,7 @@ const SignInScreen = ({ navigation }) => {
 
 
     const textInputChange = (val) => {
-        let isValid,check_textInputChange,isValidUser;
+        let isValid, check_textInputChange, isValidUser;
         let emailRegex = /\S+@\S+\.\S+/;
         if (emailRegex.test(val)) {
             check_textInputChange = true;
@@ -103,7 +104,7 @@ const SignInScreen = ({ navigation }) => {
     const handleLogin = (email, password) => {
         firebaseAuth.signInWithEmailAndPassword(FIREBASE_AUTH, email, password)
             .then((userCredential) => {
-                console.log('userCredential', userCredential['_tokenResponse'])
+                console.log('login success', userCredential)
                 login(userCredential)
             })
             .catch((error) => {

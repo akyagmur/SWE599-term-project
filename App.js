@@ -18,6 +18,9 @@ import ContactsScreen from './screens/ContactsScreen';
 import { DrawerContent } from './screens/DrawerContent';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ActivityIndicator } from 'react-native-paper';
+import SettingsScreen from './screens/SettingsScreen';
+import ProfileSettingsScreen from './screens/ProfileSettingsScreen';
+import { getAuth } from "firebase/auth";
 
 const Drawer = createDrawerNavigator();
 const UnauthenticatedStack = createStackNavigator();
@@ -87,7 +90,7 @@ function App() {
     loginState,
     login: async (foundUser) => {
       foundUser = foundUser['_tokenResponse']
-      const name = foundUser['displayName'];
+      const name = foundUser['displayName'] ?? null;
       const email = foundUser['email'];
       const token = foundUser['idToken'];
       const phone = foundUser['phoneNumber'] || null;
@@ -114,6 +117,7 @@ function App() {
         await AsyncStorage.setItem('email', email);
         await AsyncStorage.setItem('token', token);
         await AsyncStorage.setItem('phone', phone);
+        console.log(token)
       } catch (e) {
         console.log(e);
       }
@@ -132,17 +136,24 @@ function App() {
     }
   }), [loginState]);
 
+  const handleFirstLogin = async () => {
+
+    const auth = getAuth();
+    const user = auth.currentUser;
+
+    if(!user){
+      dispatch({ type: 'LOGOUT', token: null });
+      return;
+    }
+    
+
+    await AsyncStorage.getItem('token').then((value) => {
+      dispatch({ type: 'RETRIEVE_TOKEN', token: value });
+    });
+  }
 
   useEffect(() => {
-    setTimeout(() => {
-      try {
-        AsyncStorage.getItem('user').then((value) => {
-          dispatch({ type: 'RETRIEVE_TOKEN', token: value });
-        });
-      } catch (e) {
-        console.log(e);
-      }
-    }, 1000)
+    handleFirstLogin();
   }, []);
   
   if (loginState.isLoading) {
@@ -162,6 +173,7 @@ function App() {
           >
             <Drawer.Screen options={{ headerShown: false }} name="HomeDrawer" component={MainTabScreen} />
             <Drawer.Screen options={{ headerShown: true }} name="ContactsScreen" component={ContactsScreen} />
+            <Drawer.Screen options={{ headerShown: true }} name="SettingsScreen" component={SettingsScreen} />
           </Drawer.Navigator>
         )
           :

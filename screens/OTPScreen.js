@@ -25,7 +25,6 @@ const OTPScreen = ({ route }) => {
             alert('Please enter a valid code')
             return
         }
-        /* console.log(value.length) */
         const credential = firebaseAuth.PhoneAuthProvider.credential(verificationId, value)
         firebaseAuth.signInWithCredential(FIREBASE_AUTH, credential)
             .then((result) => {
@@ -33,7 +32,6 @@ const OTPScreen = ({ route }) => {
                 setCode('')
             })
             .catch((error) => {
-                console.log(error)
             });
     }
 

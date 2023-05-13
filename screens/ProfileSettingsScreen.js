@@ -6,6 +6,8 @@ import {
     TouchableOpacity,
     Image,
     Platform,
+    Button,
+    KeyboardAvoidingView
 } from 'react-native';
 import { Avatar, TextInput } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -16,13 +18,35 @@ import { getAuth, updatePassword, updatePhoneNumber, updateProfile } from 'fireb
 import PhoneInput from '@sesamsolutions/phone-input';
 import * as ImagePicker from 'expo-image-picker';
 import { getStorage, ref, uploadBytes, getDownloadURL, uploadString, uploadBytesResumable } from 'firebase/storage';
+import { FirebaseRecaptchaVerifierModal, FirebaseRecaptchaBanner } from 'expo-firebase-recaptcha'
+import { FIREBASE_AUTH, firebaseAuth } from '../firebaseConfig';
+import {
+    Provider,
+    Stack,
+    Dialog,
+    DialogHeader,
+    DialogContent,
+    DialogActions
+} from '@react-native-material/core';
+import { firebaseConfig } from '../firebaseConfig'
+import CustomModal from '../components/CustomModal';
 
 const ProfileSettings = ({ navigation }) => {
     const { logout } = React.useContext(AuthContext);
 
     const [user, setUser] = React.useState(null);
     const [profileImage, setProfileImage] = React.useState(null);
+    const [image, setImage] = React.useState(null);
+    const [verificationId, setVerificationId] = React.useState('');
+    const [modalVisible, setModalVisible] = useState(false);
+    const [otpModalVisible, setOtpModalVisible] = React.useState(false);
+    const openModal = () => {
+        setModalVisible(true);
+    };
 
+    const closeModal = () => {
+        setModalVisible(false);
+    };
     React.useEffect(() => {
         const auth = getAuth();
         const user = auth.currentUser;
@@ -31,7 +55,7 @@ const ProfileSettings = ({ navigation }) => {
         setEmail(user.email);
         setPhone(user.phoneNumber);
         setUser(user);
-        let image = user.email ? "https://www.gravatar.com/avatar/" + md5(user.email) + "?s=128" : "https://www.gravatar.com/avatar/00000000000000000000000000000000?s=128";
+        setImage(auth.currentUser.photoURL ? auth.currentUser.photoURL : "https://www.gravatar.com/avatar/" + md5(auth.currentUser.email) + "?s=128")
         setProfileImage(image);
     }, []);
 
@@ -39,7 +63,7 @@ const ProfileSettings = ({ navigation }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [phone, setPhone] = useState('');
-
+    const [otpCode, setOtpCode] = useState('');
     const storage = getStorage();
 
 
@@ -68,11 +92,48 @@ const ProfileSettings = ({ navigation }) => {
         if (!result.canceled) {
             const { assets } = result;
             const { uri } = assets[0];
-            
+            //upload to firebase storage
+
+            const blob = await getBlobFroUri(uri);
+            const storageRef = ref(storage, 'profileImages/' + user.uid + '.jpg');
+            const uploadTask = uploadBytesResumable(storageRef, blob);
+
+            uploadTask.on('state_changed',
+                (snapshot) => {
+                    //progress
+                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                    console.log('Upload is ' + progress + '% done');
+                },
+                (error) => {
+                    //error
+
+                },
+                () => {
+                    //complete
+                    getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+                        console.log('File available at', downloadURL);
+
+                        const auth = getAuth();
+                        const user = auth.currentUser;
+
+                        updateProfile(user, {
+                            photoURL: downloadURL
+                        }).then(() => {
+
+                        }).catch(function (error) {
+                            alert(error.message)
+                        });
+
+                        setProfileImage(downloadURL);
+                    });
+                }
+            );
+
             setProfileImage(uri);
         }
     };
-    
+    const recaptchaVerifier = React.useRef(null)
+
     const saveProfileInfo = () => {
         const auth = getAuth();
         const user = auth.currentUser;
@@ -93,27 +154,24 @@ const ProfileSettings = ({ navigation }) => {
                     return
                 });
         }
-
         if (phone) {
-            updatePhoneNumber(user, phone)
-                .then(function () {
-                    // Update successful.
-                })
-                .catch(function (error) {
-                    // An error ocurred
-                    // ...
-                    alert(error.message)
-                    return
+            const phoneProvider = new firebaseAuth.PhoneAuthProvider(FIREBASE_AUTH);
+            phoneProvider
+                .verifyPhoneNumber(phone.input, recaptchaVerifier.current)
+                .then(
+                    (verificationId) => {
+                        setVerificationId(verificationId)
+                        setModalVisible(true)
+                    }
+                )
+                .catch((error) => {
+
                 });
         }
 
-        // Update the user's display name
         updateProfile(user, data)
             .then(() => {
-                console.log(auth.currentUser)
                 alert('Profile updated successfully')
-
-                navigation.navigate('Home')
             })
             .catch(function (error) {
                 alert(error.message)
@@ -121,80 +179,124 @@ const ProfileSettings = ({ navigation }) => {
 
     }
 
+    const confirmCode = () => {
+        if (otpCode.length < 6) {
+            alert('Please enter a valid code')
+            return
+        }
+        const credential = firebaseAuth.PhoneAuthProvider.credential(verificationId, otpCode)
+        updatePhoneNumber(user, credential).then(() => {
+            alert('Phone number updated successfully')
+            setModalVisible(false)
+            setOtpCode('')
+        }).catch((error) => {
+            alert(error.message)
+        });
+    }
+
     return (
-        <View style={styles.container}>
-            <TouchableOpacity style={styles.profileImageContainer} onPress={chooseImage}>
-                <Avatar.Image
-                    /* gravatar via email address of user */
-                    source={{
-                        uri: profileImage
-                    }}
-                    size={150}
-                />
-                <View style={styles.cameraIconContainer}>
-                    <Icon name="camera" size={24} color="#fff"
-                        style={{
-                            opacity: 0.7,
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            borderWidth: 1,
-                            zIndex: 100,
+        <KeyboardAvoidingView
+            style={{ flex: 1 }}
+        >
+            <View style={styles.container}>
+                <CustomModal modalVisible={modalVisible} onDismiss={closeModal}>
+                    <View style={{ flex: 1 }}>
+
+                        <Text>Enter the OTP code sent to your phone</Text>
+                        <TextInput value={otpCode} onChangeText={(text) => setOtpCode(text)} label="OTP Code" variant="standard" />
+                        <TouchableOpacity
+                            style={[styles.signIn, {
+                                borderColor: '#0782F9',
+                                borderWidth: 1,
+                                marginTop: 15
+                            }]}
+                            onPress={() => {
+                                confirmCode()
+                            }}
+                        >
+                            <Text style={[styles.textSign, {
+                                color: '#0782F9'
+                            }]}>Confirm</Text>
+                        </TouchableOpacity>
+                    </View>
+                </CustomModal>
+                <TouchableOpacity style={styles.profileImageContainer} onPress={chooseImage}>
+                    <Avatar.Image
+                        /* gravatar via email address of user */
+                        source={{
+                            uri: profileImage
                         }}
+                        size={150}
+                    />
+                    <View style={styles.cameraIconContainer}>
+                        <Icon name="camera" size={24} color="#fff"
+                            style={{
+                                opacity: 0.7,
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                borderWidth: 1,
+                                zIndex: 100,
+                            }}
+                        />
+                    </View>
+                </TouchableOpacity>
+                <Text style={styles.sectionTitle}>Personal Information</Text>
+                <View style={styles.inputContainer}>
+                    <TextInput
+                        label="Full Name"
+                        value={name}
+                        onChangeText={(text) => setName(text)}
+                        style={styles.input}
                     />
                 </View>
-            </TouchableOpacity>
-            <Text style={styles.sectionTitle}>Personal Information</Text>
-            <View style={styles.inputContainer}>
-                <TextInput
-                    label="Full Name"
-                    value={name}
-                    onChangeText={(text) => setName(text)}
-                    style={styles.input}
-                />
-            </View>
-            <View style={styles.inputContainer}>
-                <TextInput
-                    placeholder="Your E-mail"
-                    placeholderTextColor="#666666"
-                    style={[styles.input, {
-                        color: Colors.text
+                <View style={styles.inputContainer}>
+                    <TextInput
+                        placeholder="Your E-mail"
+                        placeholderTextColor="#666666"
+                        style={[styles.input, {
+                            color: Colors.text
+                        }]}
+                        autoCapitalize="none"
+                        value={email}
+                        disabled
+                    />
+                </View>
+                <View style={styles.inputContainer}>
+                    <FirebaseRecaptchaVerifierModal
+                        ref={recaptchaVerifier}
+                        firebaseConfig={firebaseConfig}
+                    />
+                    <PhoneInput
+                        initialCountry="TR"
+                        onChange={(val) => setPhone(val)}
+                        value={phone}
+                    />
+                </View>
+                <View style={styles.inputContainer}>
+                    <TextInput
+                        label="Password"
+                        value={password}
+                        onChangeText={(text) => setPassword(text)}
+                        style={styles.input}
+                        secureTextEntry
+                    />
+                </View>
+                <TouchableOpacity
+                    style={[styles.signIn, {
+                        borderColor: '#0782F9',
+                        borderWidth: 1,
+                        marginTop: 15
                     }]}
-                    autoCapitalize="none"
-                    value={email}
-                    disabled
-                />
+                    onPress={() => {
+                        saveProfileInfo()
+                    }}
+                >
+                    <Text style={[styles.textSign, {
+                        color: '#0782F9'
+                    }]}>Save</Text>
+                </TouchableOpacity>
             </View>
-            <View style={styles.inputContainer}>
-                <PhoneInput
-                    initialCountry="TR"
-                    onChange={(val) => setPhone(val)}
-                    value={phone}
-                />
-            </View>
-            <View style={styles.inputContainer}>
-                <TextInput
-                    label="Password"
-                    value={password}
-                    onChangeText={(text) => setPassword(text)}
-                    style={styles.input}
-                    secureTextEntry
-                />
-            </View>
-            <TouchableOpacity
-                style={[styles.signIn, {
-                    borderColor: '#0782F9',
-                    borderWidth: 1,
-                    marginTop: 15
-                }]}
-                onPress={() => {
-                    saveProfileInfo()
-                }}
-            >
-                <Text style={[styles.textSign, {
-                    color: '#0782F9'
-                }]}>Save</Text>
-            </TouchableOpacity>
-        </View>
+        </KeyboardAvoidingView>
     );
 };
 

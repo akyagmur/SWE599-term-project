@@ -31,7 +31,6 @@ const AddressScreen = ({ navigation }) => {
                 id: doc.id,
                 ...doc.data(),
             }));
-            console.log('Addresses:', addresses);
             setAddresses(addresses);
             return addresses;
         } catch (e) {
@@ -80,8 +79,8 @@ const AddressScreen = ({ navigation }) => {
                             onPress={() => navigation.navigate('CreateAddress', { address: address })}
                             trailing={<Icon name="chevron-right" />}
                             title={address.addressName} />
-                    )
-                    )) :
+                    ))
+                ) :
                     <View
                         style={{
                             flex: 1,
@@ -94,9 +93,6 @@ const AddressScreen = ({ navigation }) => {
                                 fontSize: 20,
                             }}
                         >No addresses found</Text>
-
-
-
                     </View>
                 }
 

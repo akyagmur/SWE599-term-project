@@ -11,8 +11,6 @@ const LoginScreen = ({ navigation }) => {
     const [loading, setLoading] = useState(false)
 
     const navigateToRegisterPage = () => {
-        console.log('navigateToRegisterPage')
-
         navigation.navigate('Register')
     }
 
@@ -21,11 +19,9 @@ const LoginScreen = ({ navigation }) => {
         firebaseAuth.signInWithEmailAndPassword(FIREBASE_AUTH, email, password)
             .then((userCredential) => {
                 // Signed in
-                console.log('userCredential', userCredential)
                 navigation.navigate('Home')
             })
             .catch((error) => {
-                console.log('error', error)
                 // ..
             })
             .finally(() => {

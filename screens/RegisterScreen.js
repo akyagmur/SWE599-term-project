@@ -15,9 +15,10 @@ import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import Feather from 'react-native-vector-icons/Feather';
 import { FIREBASE_AUTH, FIRESTORE_DB, firebaseAuth } from '../firebaseConfig'
 import { AuthContext } from '../components/context';
-import { addDoc, collection } from 'firebase/firestore';
+import { addDoc, collection, doc, setDoc } from 'firebase/firestore';
 import authErrors from '../components/firebase_auth_messages';
-import { updateProfile } from 'firebase/auth';
+import { getAuth, updateCurrentUser, updatePhoneNumber, updateProfile } from 'firebase/auth';
+import { updateMetadata } from 'firebase/storage';
 
 const RegisterScreen = ({ navigation }) => {
     const { login } = React.useContext(AuthContext);
@@ -80,26 +81,29 @@ const RegisterScreen = ({ navigation }) => {
     const handleLogin = (email, password) => {
         firebaseAuth.signInWithEmailAndPassword(FIREBASE_AUTH, email, password)
             .then((userCredential) => {
-                console.log('userCredential', userCredential['_tokenResponse'])
+                
 
                 updateProfile(userCredential.user, {
                     displayName: data.name,
                 })
                     .then(() => {
-                        console.log('updateProfile success')
+                        
                         login(userCredential)
                     });
             })
             .catch((error) => {
-                console.log('error', error)
+                
             })
             .finally(() => {
             })
     }
 
     const handleSaveUserInfo = (userCredential) => {
-        const usersRef = collection(FIRESTORE_DB, 'users')
-        addDoc(usersRef, {
+        const user = getAuth().currentUser;
+        
+        const userDocRef = doc(FIRESTORE_DB, 'users', user.uid);
+
+        setDoc(userDocRef, {
             name: userCredential.user.displayName || 'null',
             email: userCredential.user.email || 'null',
             displayName: userCredential.user.displayName || 'null',
@@ -107,6 +111,15 @@ const RegisterScreen = ({ navigation }) => {
             uid: userCredential.user.uid || 'null',
             createdAt: new Date(),
         })
+       /*  const usersRef = collection(FIRESTORE_DB, 'users')
+        addDoc(usersRef, {
+            name: userCredential.user.displayName || 'null',
+            email: userCredential.user.email || 'null',
+            displayName: userCredential.user.displayName || 'null',
+            photoURL: userCredential.user.photoURL || 'null',
+            uid: userCredential.user.uid || 'null',
+            createdAt: new Date(),
+        }) */
     }
 
     const handleSignUp = () => {
@@ -131,12 +144,12 @@ const RegisterScreen = ({ navigation }) => {
             .createUserWithEmailAndPassword(FIREBASE_AUTH, email, password)
             .then((userCredential) => {
                 // Signed in
-                console.log('userCredential', userCredential)
+                
                 handleLogin(email, password)
                 handleSaveUserInfo(userCredential)
             })
             .catch((error) => {
-                console.log('handleSignUp error', error)
+                
                 // get error message
                 let errorMessage = '';
                 var errorCode = error.code;

@@ -14,11 +14,9 @@ const RegisterScreen = ({ navigation }) => {
             .createUserWithEmailAndPassword(FIREBASE_AUTH, email, password)
             .then((userCredential) => {
                 // Signed in
-                console.log('userCredential', userCredential)
                 // ...
             })
             .catch((error) => {
-                console.log('error', error)
                 // ..
             });
     }

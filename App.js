@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, StyleSheet, Text, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import LoginScreen from './screens/LoginScreen';
 import HomeScreen from './screens/HomeScreen';
@@ -21,13 +21,16 @@ import { ActivityIndicator } from 'react-native-paper';
 import SettingsScreen from './screens/SettingsScreen';
 import ProfileSettingsScreen from './screens/ProfileSettingsScreen';
 import { getAuth } from "firebase/auth";
+import md5 from 'md5';
 
 const Drawer = createDrawerNavigator();
 const UnauthenticatedStack = createStackNavigator();
 
 const UnauthenticatedStackScreen = () => {
   return (
-    <UnauthenticatedStack.Navigator headerMode='none'>
+    <UnauthenticatedStack.Navigator screenOptions={{
+      headerShown: false
+    }}>
       <UnauthenticatedStack.Screen name="Splash" component={SplashScreen} />
       <UnauthenticatedStack.Screen name="Login" component={LoginScreen} />
       <UnauthenticatedStack.Screen name="Register" component={RegisterScreen} />
@@ -94,14 +97,19 @@ function App() {
       const email = foundUser['email'];
       const token = foundUser['idToken'];
       const phone = foundUser['phoneNumber'] || null;
+      let photoURL = foundUser['profilePicture'] || null;
+
+      if (!photoURL) {
+        photoURL = "https://www.gravatar.com/avatar/" + md5(email) + "?s=128";
+      }
 
       try {
         await AsyncStorage.setItem('name', name);
         await AsyncStorage.setItem('email', email);
         await AsyncStorage.setItem('token', token);
         await AsyncStorage.setItem('phone', phone);
+        await AsyncStorage.setItem('photoURL', photoURL);
       } catch (e) {
-        console.log(e);
       }
       dispatch({ type: 'LOGIN', name, email, token, phone });
     },
@@ -117,9 +125,7 @@ function App() {
         await AsyncStorage.setItem('email', email);
         await AsyncStorage.setItem('token', token);
         await AsyncStorage.setItem('phone', phone);
-        console.log(token)
       } catch (e) {
-        console.log(e);
       }
       dispatch({ type: 'LOGIN', name, email, token, phone });
     },
@@ -130,22 +136,19 @@ function App() {
         await AsyncStorage.removeItem('token');
         await AsyncStorage.removeItem('phone');
       } catch (e) {
-        console.log(e);
       }
       dispatch({ type: 'LOGOUT' });
     }
   }), [loginState]);
 
   const handleFirstLogin = async () => {
-
     const auth = getAuth();
     const user = auth.currentUser;
 
-    if(!user){
+    if (!user) {
       dispatch({ type: 'LOGOUT', token: null });
       return;
     }
-    
 
     await AsyncStorage.getItem('token').then((value) => {
       dispatch({ type: 'RETRIEVE_TOKEN', token: value });
@@ -155,7 +158,7 @@ function App() {
   useEffect(() => {
     handleFirstLogin();
   }, []);
-  
+
   if (loginState.isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>

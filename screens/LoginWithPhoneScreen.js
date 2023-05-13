@@ -41,8 +41,6 @@ const SignInScreen = ({ navigation }) => {
     }
 
     const sendVerification = () => {
-        console.log('phone', phone.input)
-
         const phoneProvider = new firebaseAuth.PhoneAuthProvider(FIREBASE_AUTH);
         phoneProvider
             .verifyPhoneNumber(phone.input, recaptchaVerifier.current)
@@ -51,14 +49,10 @@ const SignInScreen = ({ navigation }) => {
                     setVerificationId(verificationId)
                     // navigate to OTP screen with verificationId as prop
                     navigation.navigate('OTPScreen', { verificationId })
-                    console.log('verificationId', verificationId)
                 }
             )
             .catch((error) => {
-                console.log(error)
             });
-
-        //setPhone('')
     }
     return (
         <View style={styles.container}>

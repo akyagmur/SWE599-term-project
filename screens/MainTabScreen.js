@@ -8,6 +8,7 @@ import SettingsScreen from './SettingsScreen';
 import ProfileSettingsScreen from './ProfileSettingsScreen';
 import AddressScreen from './AddressScreen';
 import CreateAddressScreen from './CreateAddressScreen';
+import CreateContactScreen from './CreateContactScreen';
 
 const HomeStack = createStackNavigator();
 const ContactsStack = createStackNavigator();
@@ -19,7 +20,7 @@ const MainTabScreen = () => {
         <BottomTabNavigator.Navigator
             activeColor='#3f51b5'
         >
-            <BottomTabNavigator.Screen name="HomeDrawer" component={HomeStackScreen}
+            <BottomTabNavigator.Screen name="Home" component={HomeStackScreen}
                 options={{
                     tabBarLabel: 'Home',
                     tabBarColor: 'red',
@@ -95,6 +96,12 @@ const ContactsStackScreen = ({ navigation }) => {
         >
             <ContactsStack.Screen name="Contacts" component={ContactsScreen} options={{
                 title: 'Contacts',
+                headerLeft: () => (
+                    <Icon.Button name="ios-menu" size={25} backgroundColor="#3f51b5" onPress={() => navigation.openDrawer()}></Icon.Button>
+                )
+            }} />
+            <ContactsStack.Screen name="CreateContact" component={CreateContactScreen} options={{
+                title: 'Add Contact',
                 headerLeft: () => (
                     <Icon.Button name="ios-menu" size={25} backgroundColor="#3f51b5" onPress={() => navigation.openDrawer()}></Icon.Button>
                 )

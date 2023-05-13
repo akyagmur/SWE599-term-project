@@ -13,7 +13,6 @@ const LoginWithPhoneScreen = ({ navigation }) => {
     const [loading, setLoading] = useState(false)
 
     const sendVerification = () => {
-        console.log('phone', phone)
 
         const phoneProvider = new firebaseAuth.PhoneAuthProvider(FIREBASE_AUTH);
         phoneProvider
@@ -23,11 +22,9 @@ const LoginWithPhoneScreen = ({ navigation }) => {
                     setVerificationId(verificationId)
                     // navigate to OTP screen with verificationId as prop
                     navigation.navigate('OTPScreen', { verificationId })
-                    console.log('verificationId', verificationId)
                 }
             )
             .catch((error) => {
-                console.log(error)
             });
 
         //setPhone('')

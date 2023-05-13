@@ -104,11 +104,9 @@ const SignInScreen = ({ navigation }) => {
     const handleLogin = (email, password) => {
         firebaseAuth.signInWithEmailAndPassword(FIREBASE_AUTH, email, password)
             .then((userCredential) => {
-                console.log('login success', userCredential)
                 login(userCredential)
             })
             .catch((error) => {
-                console.log('error', error)
             })
             .finally(() => {
             })

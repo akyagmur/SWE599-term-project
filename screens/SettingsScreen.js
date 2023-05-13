@@ -12,19 +12,14 @@ const SettingsScreen = ({ navigation }) => {
     const { logout } = React.useContext(AuthContext);
 
     const [user, setUser] = React.useState({});
-
+    const [image, setImage] = React.useState(null);
     React.useEffect(() => {
         const auth = getAuth();
         const user = auth.currentUser;
         setUser(user);
-        if (!user) {
-            logout();
-            return;
-        }
+        setImage(auth.currentUser.photoURL ? auth.currentUser.photoURL : "https://www.gravatar.com/avatar/" + md5(auth.currentUser.email) + "?s=128")
     }, []);
 
-    const image = user.email ? "https://www.gravatar.com/avatar/" + md5(user.email) + "?s=128" : "https://www.gravatar.com/avatar/00000000000000000000000000000000?s=128";
-    console.log(user);
     return (
         <ScrollView
             contentContainerStyle={{

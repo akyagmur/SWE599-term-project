@@ -10,27 +10,29 @@ import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { AuthContext } from "../components/context";
 import md5 from 'md5';
 import { getAuth } from "firebase/auth";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export function DrawerContent(props) {
 
     const [isDarkTheme, setIsDarkTheme] = React.useState(false);
     const [user, setUser] = React.useState({});
+    const [image, setImage] = React.useState(null);
 
     React.useEffect(() => {
         const auth = getAuth();
         const user = auth.currentUser;
-        
-        console.log('user',user)
-
         setUser(user);
+        setImage(auth.currentUser.photoURL ? auth.currentUser.photoURL : "https://www.gravatar.com/avatar/" + md5(auth.currentUser.email) + "?s=128")
     }, []);
 
     const toggleTheme = () => {
         setIsDarkTheme(!isDarkTheme);
     }
 
-    const { logout } = React.useContext(AuthContext);
-    const image = user.email ? "https://www.gravatar.com/avatar/" + md5(user.email) + "?s=128" : "https://www.gravatar.com/avatar/00000000000000000000000000000000?s=128";
+    const { logout, getProfileImage } = React.useContext(AuthContext);
+    // get image from async storage
+
+
     return (
         <View style={{ flex: 1 }}>
             <DrawerContentScrollView {...props}>

@@ -6,7 +6,6 @@ import * as Animatable from 'react-native-animatable';
 const HomeScreen = () => {
 
   const { loginState } = useContext(AuthContext);
-  console.log('loginState', loginState);
   return (
     <Animatable.View
       animation="fadeInUpBig"

@@ -6,6 +6,10 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "permissions": [
+      "LOCATION",
+      "BACKGROUND_LOCATION"
+    ],
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
@@ -15,13 +19,29 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "UIBackgroundModes": [
+          "location",
+          "fetch"
+        ]
+      },
+      "bundleIdentifier": "com.akyagmur.SWE599"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "permissions": [
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.ACCESS_BACKGROUND_LOCATION"
+      ],
+      "backgroundPermissions": {
+        "location": "coarse"
+      },
+      "package": "com.akyagmur.SWE599"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -34,7 +54,19 @@
             "useFrameworks": "static"
           }
         }
+      ],
+      [
+        "onesignal-expo-plugin",
+        {
+          "mode": "development"
+        }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "c2697584-97f6-4cd2-8b9f-cda1decab8b5"
+      },
+      "oneSignalAppId": "e28e6d35-d7b4-41eb-a860-5da4fdc923ea"
+    }
   }
 }

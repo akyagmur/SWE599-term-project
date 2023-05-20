@@ -5,7 +5,7 @@ import { Colors } from 'react-native/Libraries/NewAppScreen'
 import { ScrollView } from 'react-native-gesture-handler'
 import PhoneInput from '@sesamsolutions/phone-input'
 import { getAuth } from 'firebase/auth'
-import { addDoc, collection, doc, getDoc, getDocs, query, setDoc, updateDoc, where } from 'firebase/firestore'
+import { collection, doc, getDocs, query, setDoc, where } from 'firebase/firestore'
 import { FIRESTORE_DB } from '../firebaseConfig'
 
 const CreateContactScreen = () => {
@@ -15,82 +15,74 @@ const CreateContactScreen = () => {
     React.useEffect(() => {
     }, []);
 
-    const addContactToCurrentUser = async (contact) => {
-        const auth = getAuth();
-
-        const userDocRef = doc(FIRESTORE_DB, 'users', auth.currentUser.uid);
-        const userDoc = await getDoc(userDocRef);
-        const user = userDoc.data();
-
-        const contacts = user.contacts ?? [];
-
-        let data = {
-            uid: contact.id ?? '',
-            email: contact.email ?? '',
-            phone: contact.phone ?? '',
-            displayName: contact.displayName ?? '',
-            status: 'pending',
-            type: 'sent',
-            createdAt: new Date().getTime()
-        };
-        updateDoc(userDocRef, {
-            contacts: [
-                ...contacts,
-                data
-            ]
-        });
-    }
-
     const addContact = async () => {
-        const auth = getAuth();
+        const contactEmail = email;
+        const contactPhone = phone;
+        var value, field;
 
-        let field, value;
-        if (email !== '') {
+        if (contactEmail !== '') {
+            value = contactEmail;
             field = 'email';
-            value = email;
-        } else if (phone !== '') {
+        } else if (contactPhone !== '') {
+            value = contactPhone;
             field = 'phone';
-            value = phone;
+        } else {
+            return;
         }
-        // Update user who receives the request
-        const usersRef = collection(FIRESTORE_DB, 'users');
-        const q = query(usersRef, where(field, '==', value));
 
-        try {
-            const querySnapshot = await getDocs(q);
-            const users = querySnapshot.docs.map((doc) => ({
-                id: doc.id,
-                ...doc.data(),
-            }));
-            const user = users[0];
-            const contacts = user.contacts ?? [];
+        const db = FIRESTORE_DB;
+        const auth = getAuth();
+        const currentUser = auth.currentUser;
+        const currentUserId = currentUser.uid;
+        
+        // Find the user who is being added as a contact
+        const contactQuery = query(collection(db, 'users'), where(field, '==', email));
+        const contactQuerySnapshot = await getDocs(contactQuery);
 
-            let isAlreadyInContacts = contacts.find((contact) => contact.uid === auth.currentUser.uid);
-            if (isAlreadyInContacts) {
-                alert('Contact already exists!');
-                return;
-            } else {
-
-                addContactToCurrentUser(user);
-            }
-
-            const userDocRef = doc(FIRESTORE_DB, 'users', user.id);
-            updateDoc(userDocRef, {
-                contacts: [...contacts, {
-                    uid: auth.currentUser.uid,
-                    email: auth.currentUser.email,
-                    phone: auth.currentUser.phoneNumber,
-                    displayName: auth.currentUser.displayName,
-                    status: 'pending',
-                    type: 'received',
-                    createdAt: new Date().getTime()
-                }]
-            });
-
-            alert('Contact request sent!');
-        } catch (e) {
-            console.error(e);
+        if (contactQuerySnapshot.empty) {
+            console.log("No user found with the provided contact email");
+            return;
         }
+
+        // Get the first document from the query result (there should only be one)
+        const contactDoc = contactQuerySnapshot.docs[0];
+        const contactId = contactDoc.id;
+        const contactData = contactDoc.data();
+
+        // Check if the contact already exists in the current user's contacts
+        const currentUserContactsQuery = query(collection(db, 'users', currentUserId, 'contacts'), where('uid', '==', contactId));
+        const currentUserContactsQuerySnapshot = await getDocs(currentUserContactsQuery);
+
+        if (!currentUserContactsQuerySnapshot.empty) {
+            alert("This contact already exists in your contacts");
+            return;
+        }
+
+        // Add the contact to the current user's contacts
+        const currentUserContactDocRef = doc(db, 'users', currentUserId, 'contacts', contactId);
+        const currentUserContactData = {
+            uid: contactId,
+            name: contactData.name,
+            email: contactData.email,
+            type: "sent",
+            createdAt: new Date(),
+            status: "pending"
+        };
+        await setDoc(currentUserContactDocRef, currentUserContactData);
+
+        // Add the current user to the contact's contacts
+        const contactContactDocRef = doc(db, 'users', contactId, 'contacts', currentUserId);
+        const contactContactData = {
+            uid: currentUserId,
+            name: currentUser.displayName, // Replace with the current user's name
+            email: currentUser.email,
+            type: "received",
+            createdAt: new Date(),
+            status: "pending"
+        };
+        await setDoc(contactContactDocRef, contactContactData);
+        // show an alert and navigate to the contacts screen after the alert is closed
+        alert("Contact added successfully");
     }
 
     return (

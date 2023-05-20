@@ -1,4 +1,4 @@
-import { KeyboardAvoidingView, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import LoginScreen from './screens/LoginScreen';
 import HomeScreen from './screens/HomeScreen';
@@ -17,11 +17,18 @@ import MainTabScreen from './screens/MainTabScreen';
 import ContactsScreen from './screens/ContactsScreen';
 import { DrawerContent } from './screens/DrawerContent';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ActivityIndicator } from 'react-native-paper';
+import { ActivityIndicator, Button } from 'react-native-paper';
 import SettingsScreen from './screens/SettingsScreen';
 import ProfileSettingsScreen from './screens/ProfileSettingsScreen';
-import { getAuth } from "firebase/auth";
+import { getAuth, initializeAuth, onAuthStateChanged } from "firebase/auth";
 import md5 from 'md5';
+import { initializeApp } from 'firebase/app';
+import { FIREBASE_APP, FIRESTORE_DB, firebaseConfig } from './firebaseConfig';
+import { getReactNativePersistence } from "firebase/auth/react-native"
+import OneSignal from 'react-native-onesignal';
+// import CustomModal as SafetyStatusModal
+import { default as SafetyStatusModal } from './components/CustomModal';
+import { collection, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 
 const Drawer = createDrawerNavigator();
 const UnauthenticatedStack = createStackNavigator();
@@ -41,7 +48,6 @@ const UnauthenticatedStackScreen = () => {
 };
 
 function App() {
-
   const initialLoginState = {
     isLoading: true,
     name: null,
@@ -49,6 +55,33 @@ function App() {
     email: null,
     phone: null,
   };
+
+  const [isSafetyRequestModalVisible, setSafetyRequestModalVisible] = useState(false);
+  const [safetyRequestId, setSafetyRequestId] = useState('');
+  const [safetyStatus, setSafetyStatus] = useState('safe');
+  const [additionalData, setAdditionalData] = useState('');
+  const [notificationData, setNotificationData] = useState({});
+
+  useEffect(() => {
+    OneSignal.setNotificationOpenedHandler((notification) => {
+      const { additionalData } = notification.notification;
+      if (additionalData?.type == 'safetyRequest') {
+        setSafetyRequestId(additionalData.requestId);
+        setSafetyRequestModalVisible(true);
+        setNotificationData(additionalData);
+      }
+    });
+
+    OneSignal.setNotificationWillShowInForegroundHandler((notificationReceivedEvent) => {
+      const { additionalData } = notificationReceivedEvent.notification;
+      console.log('notification from foreground event', additionalData);
+      if (additionalData?.type == 'safetyRequest') {
+        setSafetyRequestId(additionalData.requestId);
+        setSafetyRequestModalVisible(true);
+        setNotificationData(additionalData);
+      }
+    });
+  }, []);
 
   const loginReducer = (prevState, action) => {
     switch (action.type) {
@@ -85,6 +118,10 @@ function App() {
           isLoading: false,
         };
     }
+  };
+
+  const closeModal = () => {
+    setSafetyRequestModalVisible(false);
   };
 
   const [loginState, dispatch] = useReducer(loginReducer, initialLoginState);
@@ -155,6 +192,39 @@ function App() {
     });
   }
 
+  const responseSafetyRequest = async () => {
+    const auth = getAuth();
+    const user = auth.currentUser;
+    const sender = notificationData.senderId;
+
+    const db = FIRESTORE_DB;
+    var newSafetyResponseId = md5(user.uid + Math.random().toString(36).substring(7) + new Date().getTime());
+    const safetyResponseRef = doc(db, 'users', user.uid, 'safetyResponses', newSafetyResponseId);
+    const safetyResponse = {
+      status: safetyStatus,
+      additionalData: additionalData,
+      safetyResponseTime: new Date().getTime(),
+    };
+    await setDoc(safetyResponseRef, safetyResponse);
+
+    // update user's collection
+    const userDoc = doc(db, 'users', user.uid);
+    updateDoc(userDoc, {
+      latestSafetyStatus: safetyStatus,
+      latestSafetyStatusTime: new Date().getTime(),
+      latestSafetyResponseId: newSafetyResponseId,
+    })
+      .then(() => {
+        console.log("Document successfully updated!");
+      })
+      .catch((error) => {
+        console.error("Error updating document: ", error);
+      });
+
+      setSafetyRequestModalVisible(false);
+      alert('Response sent!');
+  }
+
   useEffect(() => {
     handleFirstLogin();
   }, []);
@@ -168,23 +238,135 @@ function App() {
   }
   return (
     <AuthContext.Provider value={authContext}>
-      <NavigationContainer>
-        {loginState.token !== null ? (
-          <Drawer.Navigator
-            initialRouteName="Home"
-            drawerContent={props => <DrawerContent {...props} />}
-          >
-            <Drawer.Screen options={{ headerShown: false }} name="HomeDrawer" component={MainTabScreen} />
-            <Drawer.Screen options={{ headerShown: true }} name="ContactsScreen" component={ContactsScreen} />
-            <Drawer.Screen options={{ headerShown: true }} name="SettingsScreen" component={SettingsScreen} />
-          </Drawer.Navigator>
-        )
-          :
-          <UnauthenticatedStackScreen />
-        }
-      </NavigationContainer>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
+        <SafetyStatusModal
+          modalVisible={isSafetyRequestModalVisible} onDismiss={closeModal}
+        >
+          <KeyboardAvoidingView behavior="padding">
+            <Text>
+              Safety request received from {notificationData?.senderName}!
+            </Text>
+            {/* Buttons in a line, "Safe", "In danger", "Injured" */}
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity
+                /* if clicked, change style as buttonSelected */
+                style={safetyStatus == 'safe' ? [styles.button, styles.buttonSelected] : styles.button}
+                onPress={() => {
+                  setSafetyStatus('safe');
+                }}
+              >
+                <Text
+                  style={styles.buttonText}
+                >Safe</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={safetyStatus == 'in-danger' ? [styles.button, styles.buttonSelected] : styles.button}
+                onPress={() => {
+                  setSafetyStatus('in-danger')
+                }}
+              >
+                <Text
+                  style={styles.buttonText}
+                >Indanger</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={safetyStatus == 'injured' ? [styles.button, styles.buttonSelected] : styles.button}
+                onPress={() => {
+                  setSafetyStatus('injured')
+                }}
+              >
+                <Text
+                  style={styles.buttonText}
+                >Injured</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.textInputContainer}>
+              <Text style={styles.label}>Additional Data:</Text>
+              <TextInput
+                style={styles.input}
+                value={additionalData}
+                onChangeText={setAdditionalData}
+                placeholder="Enter additional data"
+                multiline
+              />
+            </View>
+            <TouchableOpacity style={styles.submitButton} onPress={responseSafetyRequest}>
+              <Text style={styles.buttonText}>Submit</Text>
+            </TouchableOpacity>
+          </KeyboardAvoidingView>
+        </SafetyStatusModal>
+        <NavigationContainer>
+          {loginState.token !== null ? (
+            <Drawer.Navigator
+              initialRouteName="Home"
+              drawerContent={props => <DrawerContent {...props} />}
+            >
+              <Drawer.Screen options={{ headerShown: false }} name="HomeDrawer" component={MainTabScreen} />
+              <Drawer.Screen options={{ headerShown: true }} name="ContactsScreen" component={ContactsScreen} />
+              <Drawer.Screen options={{ headerShown: true }} name="SettingsScreen" component={SettingsScreen} />
+            </Drawer.Navigator>
+          )
+            :
+            <UnauthenticatedStackScreen />
+          }
+        </NavigationContainer>
+      </KeyboardAvoidingView>
     </AuthContext.Provider>
   );
 }
 
 export default App;
+
+const styles = StyleSheet.create({
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 20,
+  },
+  /* fill  */
+  button: {
+    flex: 1,
+    alignItems: 'center',
+    backgroundColor: '#0782F9',
+    padding: 10,
+    margin: 10,
+    justifyContent: 'center',
+    borderRadius: 10,
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 18,
+  },
+  buttonSelected: {
+    backgroundColor: '#0756a3',
+    justifyContent: 'center',
+  },
+  textInputContainer: {
+    marginTop: 20,
+  },
+  label: {
+    fontSize: 16,
+    marginBottom: 5,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 5,
+    padding: 10,
+    height: 100,
+  },
+  modalContentContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 10,
+  },
+  submitButton: {
+    backgroundColor: '#0782F9',
+    padding: 10,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginTop: 20,
+  },
+
+});

@@ -1,28 +1,19 @@
 import React, { useState } from 'react';
-import {
-    View,
-    Text,
-    TouchableOpacity,
-    TextInput,
-    Platform,
-    StyleSheet,
-    StatusBar,
-} from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, Platform, StyleSheet, StatusBar, } from 'react-native';
 import * as Animatable from 'react-native-animatable';
 import { LinearGradient } from 'expo-linear-gradient'
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import Feather from 'react-native-vector-icons/Feather';
-
 import { ActivityIndicator, useTheme } from 'react-native-paper';
 import { AuthContext } from '../components/context';
-import { FIREBASE_AUTH, firebaseAuth } from '../firebaseConfig';
-import { ScrollView } from 'react-native-gesture-handler';
-
+import { FIREBASE_AUTH, FIRESTORE_DB, firebaseAuth } from '../firebaseConfig';
+import OneSignal from 'react-native-onesignal';
+import { doc, setDoc } from 'firebase/firestore';
 const SignInScreen = ({ navigation }) => {
 
     const [data, setData] = useState({
-        email: '',
-        password: '',
+        email: 'akyagmur@gmail.com',
+        password: 'deneme123',
         check_textInputChange: false,
         secureTextEntry: true,
         isValidUser: true,
@@ -101,10 +92,21 @@ const SignInScreen = ({ navigation }) => {
         });
     }
 
+    //get one signal device id
+
+
     const handleLogin = (email, password) => {
         firebaseAuth.signInWithEmailAndPassword(FIREBASE_AUTH, email, password)
             .then((userCredential) => {
-                login(userCredential)
+                login(userCredential).then(() => {
+                    OneSignal.getDeviceState().then((device) => {
+                        const { userId } = device;
+                        const docRef = doc(FIRESTORE_DB, 'users', userCredential.user.uid);
+                        setDoc(docRef, {
+                            oneSignalId: userId
+                        }, { merge: true });
+                    });
+                });
             })
             .catch((error) => {
             })

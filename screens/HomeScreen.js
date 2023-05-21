@@ -192,6 +192,15 @@ export default function HomeScreen() {
     console.log('Clicked coordinates:', coordinate);
   };
 
+  const refreshFriends = async () => {
+    setLocationLoading(true);
+    const friends = await getFriends().then((friends) => {
+      setLocationLoading(false);
+      setFriends(friends);
+    });
+  };
+
+
   return (
     <View style={styles.container}>
       <MapView
@@ -274,6 +283,10 @@ export default function HomeScreen() {
         <Button title="Show Current Location" onPress={showCurrentLocation} />
       </View> */}
       {/* Show location Icon */}
+      <View style={styles.refreshButton}>
+        <Icon name="refresh" size={30} onPress={refreshFriends} />
+      </View>
+  
       <View style={{
         position: 'absolute',
         bottom: 20,
@@ -313,7 +326,7 @@ export default function HomeScreen() {
                     }, 1000);
                   }}
                 >
-                  <Text style={{ marginLeft: 10 }}>{friend.name}</Text>
+                  <Text style={{ marginLeft: 10 }}>{friend.displayName}</Text>
                 </TouchableOpacity>
               </View>
             ))}
@@ -358,5 +371,13 @@ const styles = StyleSheet.create({
     left: 20,
     padding: 10,
     borderRadius: 10,
-  }
+  },
+  refreshButton: {
+    position: 'absolute',
+    bottom: 20,
+    left: 20,
+    backgroundColor: 'white',
+    padding: 10,
+    borderRadius: 10,
+  },
 });

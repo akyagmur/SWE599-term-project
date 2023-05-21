@@ -79,32 +79,9 @@ const SettingsScreen = ({ navigation }) => {
                     trailing={<Icon name="chevron-right" />}
                     title="My Addresses" />
                 <ListItem
+                    onPress={() => navigation.navigate('Contacts')}
                     trailing={<Icon name="chevron-right" />}
                     title="Emergency Contacts" />
-                <ListItem
-                    trailing={<Icon name="chevron-right" />}
-                    title="Devices" />
-                <ListItem
-                    trailing={<Icon name="chevron-right" />}
-                    title="Notifications" />
-                <ListItem
-                    trailing={<Icon name="chevron-right" />}
-                    title="Appearance" />
-                <ListItem
-                    trailing={<Icon name="chevron-right" />}
-                    title="Language" />
-                <ListItem
-                    trailing={<Icon name="chevron-right" />}
-                    title="Privacy & Security" />
-                <ListItem
-                    trailing={<Icon name="chevron-right" />}
-                    title="Storage" />
-                <ListItem
-                    trailing={<Icon name="chevron-right" />}
-                    title="Storage" />
-                <ListItem
-                    trailing={<Icon name="chevron-right" />}
-                    title="Storage" />
             </View>
         </ScrollView>
     )

@@ -8,7 +8,7 @@ import { ActivityIndicator, useTheme } from 'react-native-paper';
 import { AuthContext } from '../components/context';
 import { FIREBASE_AUTH, FIRESTORE_DB, firebaseAuth } from '../firebaseConfig';
 import OneSignal from 'react-native-onesignal';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, updateDoc } from 'firebase/firestore';
 const SignInScreen = ({ navigation }) => {
 
     const [data, setData] = useState({
@@ -99,13 +99,13 @@ const SignInScreen = ({ navigation }) => {
         firebaseAuth.signInWithEmailAndPassword(FIREBASE_AUTH, email, password)
             .then((userCredential) => {
                 login(userCredential).then(() => {
-                    OneSignal.getDeviceState().then((device) => {
-                        const { userId } = device;
-                        const docRef = doc(FIRESTORE_DB, 'users', userCredential.user.uid);
-                        setDoc(docRef, {
-                            oneSignalId: userId
-                        }, { merge: true });
-                    });
+                    const data = OneSignal.getDeviceState();
+                    data.then((device) => {
+                        const userRef = doc(FIRESTORE_DB, "users", userCredential.user.uid);
+                        updateDoc(userRef, {
+                            oneSignalId: device.userId
+                        });
+                    })
                 });
             })
             .catch((error) => {

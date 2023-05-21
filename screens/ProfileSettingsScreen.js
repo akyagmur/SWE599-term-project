@@ -20,14 +20,6 @@ import * as ImagePicker from 'expo-image-picker';
 import { getStorage, ref, uploadBytes, getDownloadURL, uploadString, uploadBytesResumable } from 'firebase/storage';
 import { FirebaseRecaptchaVerifierModal, FirebaseRecaptchaBanner } from 'expo-firebase-recaptcha'
 import { FIREBASE_AUTH, firebaseAuth } from '../firebaseConfig';
-import {
-    Provider,
-    Stack,
-    Dialog,
-    DialogHeader,
-    DialogContent,
-    DialogActions
-} from '@react-native-material/core';
 import { firebaseConfig } from '../firebaseConfig'
 import CustomModal from '../components/CustomModal';
 
@@ -56,7 +48,7 @@ const ProfileSettings = ({ navigation }) => {
         setPhone(user.phoneNumber);
         setUser(user);
         setImage(auth.currentUser.photoURL ? auth.currentUser.photoURL : "https://www.gravatar.com/avatar/" + md5(auth.currentUser.email) + "?s=128")
-        setProfileImage(image);
+        setProfileImage(auth.currentUser.photoURL ? auth.currentUser.photoURL : "https://www.gravatar.com/avatar/" + md5(auth.currentUser.email) + "?s=128");
     }, []);
 
     const [name, setName] = useState('');

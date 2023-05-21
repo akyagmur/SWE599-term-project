@@ -1,7 +1,6 @@
 import { KeyboardAvoidingView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import LoginScreen from './screens/LoginScreen';
-import HomeScreen from './screens/HomeScreen';
 import RegisterScreen from './screens/RegisterScreen';
 import LoginWithPhoneScreen from './screens/LoginWithPhoneScreen';
 import OTPScreen from './screens/OTPScreen';
@@ -19,16 +18,14 @@ import { DrawerContent } from './screens/DrawerContent';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ActivityIndicator, Button } from 'react-native-paper';
 import SettingsScreen from './screens/SettingsScreen';
-import ProfileSettingsScreen from './screens/ProfileSettingsScreen';
-import { getAuth, initializeAuth, onAuthStateChanged } from "firebase/auth";
+import { getAuth } from "firebase/auth";
 import md5 from 'md5';
-import { initializeApp } from 'firebase/app';
-import { FIREBASE_APP, FIRESTORE_DB, firebaseConfig } from './firebaseConfig';
-import { getReactNativePersistence } from "firebase/auth/react-native"
+import { FIRESTORE_DB } from './firebaseConfig';
 import OneSignal from 'react-native-onesignal';
 // import CustomModal as SafetyStatusModal
 import { default as SafetyStatusModal } from './components/CustomModal';
 import { collection, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import Constants from 'expo-constants';
 
 const Drawer = createDrawerNavigator();
 const UnauthenticatedStack = createStackNavigator();
@@ -61,8 +58,14 @@ function App() {
   const [safetyStatus, setSafetyStatus] = useState('safe');
   const [additionalData, setAdditionalData] = useState('');
   const [notificationData, setNotificationData] = useState({});
+  OneSignal.setLogLevel(6, 0);
+  OneSignal.setAppId(Constants.manifest.extra.oneSignalAppId);
 
   useEffect(() => {
+    OneSignal.promptForPushNotificationsWithUserResponse((response) => {
+      console.log('Prompt response:', response);
+    });
+
     OneSignal.setNotificationOpenedHandler((notification) => {
       const { additionalData } = notification.notification;
       if (additionalData?.type == 'safetyRequest') {
@@ -81,6 +84,11 @@ function App() {
         setNotificationData(additionalData);
       }
     });
+
+    // Clean up the listeners when the component unmounts
+    return () => {
+      OneSignal.clearHandlers();
+    };
   }, []);
 
   const loginReducer = (prevState, action) => {
@@ -221,8 +229,8 @@ function App() {
         console.error("Error updating document: ", error);
       });
 
-      setSafetyRequestModalVisible(false);
-      alert('Response sent!');
+    setSafetyRequestModalVisible(false);
+    alert('Response sent!');
   }
 
   useEffect(() => {

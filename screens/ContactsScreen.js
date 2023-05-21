@@ -44,7 +44,6 @@ const ContactsScreen = ({ navigation }) => {
         }
       })
     );
-    console.log('lookhere', friendRequests);
     return friendRequests;
   };
 
@@ -134,7 +133,6 @@ const ContactsScreen = ({ navigation }) => {
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
     await getFriendRequests().then((data) => {
-      console.log('thenhere', data);
       setFriendRequests(data);
       setRefreshing(false);
     });

@@ -218,11 +218,6 @@ export default function HomeScreen() {
           style={{ width: 10, height: 10 }}
 
         />
-        <Marker
-          coordinate={{ latitude: 37.7734153, longitude: -122.4577787 }}
-          title="Marker Title"
-          description="Marker Description"
-        />
         {currentLocation && (
           <Marker
             coordinate={{
